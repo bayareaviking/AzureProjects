@@ -1,0 +1,80 @@
+// Module 8 - Extensibility Using Python / R
+// Demo 2 - Time Series Analysis
+
+//-------------------------------------------------------------------------------------------------
+// Fitting time series with high order polynomial using numpy.polyfit
+//-------------------------------------------------------------------------------------------------
+
+// Our source dataset plotted - This is an original time series
+// of Web service telemetry views
+let max_t = datetime(2016-09-03);
+demo_make_series1
+  | make-series num=count()
+             on TimeStamp
+           from max_t-1d to max_t step 5m
+             by OsVer
+  | render timechart
+
+// Attempt to do a linear fit (polynomial of 1st degree) using 
+// the native series_fit_line() function
+//
+//  You can see it's not a good fit for any of these 3 time series
+//
+let max_t = datetime(2016-09-03);
+demo_make_series1
+  | make-series num=count()
+             on TimeStamp
+           from max_t-1d to max_t step 5m
+             by OsVer
+  | extend series_fit_line(num)
+  | render timechart
+
+
+// Now we'll look for the optimal fit by high order 
+// polynomials using numpy.polyfit
+//
+// You can see that fitting with quartic polynomials (of 4th degree) is good, 
+// much better than linear fit for this set of 3 time series
+//
+// numpy (https://numpy.org/) is the main mathematical open source package 
+// for Python, containing plenty of functions in various domains: linear 
+// algebra, statistics, transformations and many more.
+// Here we use polyfit (https://numpy.org/doc/1.18/reference/generated/numpy.polyfit.html)
+// to solve polynomial fit equations
+//
+let pyCode = 'in_series = kargs["in_series"]\n'
+             'out_series = kargs["out_series"]\n'
+             'degree = kargs["degree"]\n'
+             '\n'
+             'def fit(s, deg):\n'
+             '# our fit function accept a single series\n'
+             '# and the degree of the polynomial to fit\n'
+                  //  create x axis with equally spaced sequential values
+             '    x = np.arange(len(s))\n'
+                  //  the best fit algebra is done here, returning the polynomial coefficients 
+             '    coeff = np.polyfit(x, s, deg)\n'
+                  //  create a polynomial
+             '    p = np.poly1d(coeff)\n'
+                  //  extrapolate its values (y-axis) for the x values
+             '    z = p(x)\n'
+             '    return z\n'
+             '\n'
+             'result = df\n'
+             //  use apply to call the fit function for each time series
+             'result[out_series] = df[in_series].apply(fit, args=(degree,))\n';
+let max_t = datetime(2016-09-03);
+demo_make_series1
+  | make-series num=count()
+             on TimeStamp
+           from max_t-1d to max_t step 5m
+             by OsVer
+    // Using the native function for linear regression
+  | extend series_fit_line(num)
+    // Prepare a column for the fitted curves, to be filled by the Python script
+  | extend fit_num=dynamic(null)
+    // The output schema is the same as the input one, the script will fill the fit_num column
+  | evaluate python( typeof(*)
+                   , pyCode
+                   , pack('in_series', 'num', 'out_series', 'fit_num', 'degree', 4)
+                   )  //  passing dictionary of script parameters to the Python sandbox
+  | render timechart

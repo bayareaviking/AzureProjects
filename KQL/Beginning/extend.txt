@@ -1,0 +1,21 @@
+Perf
+| where CounterName == "Free Megabytes"
+| take 10
+| extend FreeGB = CounterValue / 1000 // Creates a new column with the value of an expression
+
+Perf
+| where CounterName == "Free Megabytes"
+| take 10
+| extend FreeGB = CounterValue / 1000
+       , FreeKB = CounterValue * 1000 // Create multiple columns with comma-separated assignments
+
+Perf
+| where CounterName == "Free Megabytes"
+| take 10
+| extend FreeGB = CounterValue / 1000 // Creating new column with assigned value
+       , FreeMB = CounterValue // Renaming the existing column
+       , FreeKB = CounterValue * 1000 // Creating new column with assigned value
+
+Perf
+| take 10
+| extend ObjectCounter = strcat(ObjectName, " - ", CounterName)

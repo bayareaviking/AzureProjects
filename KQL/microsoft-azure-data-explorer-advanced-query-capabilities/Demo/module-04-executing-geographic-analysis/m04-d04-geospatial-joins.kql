@@ -1,0 +1,68 @@
+// Module 4 - Executing Geographic Analysis
+// Demo 4 - Geospatial Joins
+
+// Connect to the sample database
+#connect cluster('help.kusto.windows.net').database('Samples')
+
+//-------------------------------------------------------------------------------------------------
+// Geospatial joins
+// Storm events per state.
+//-------------------------------------------------------------------------------------------------
+let s2Level = 5;
+US_States
+  | project State = features.properties.NAME
+          , polygon = features.geometry
+  | extend covering = geo_polygon_to_s2cells(polygon, s2Level)
+  | mv-expand covering to typeof(string)
+  | join kind = inner hint.strategy = broadcast
+  (
+    StormEvents
+    | project BeginLon, BeginLat
+    | extend covering = geo_point_to_s2cell(BeginLon, BeginLat, s2Level)
+  ) on covering
+  | where geo_point_in_polygon(BeginLon, BeginLat, polygon)
+  | summarize NumberOfEvents = count() by tostring(State)
+  | order by State asc 
+
+
+//-------------------------------------------------------------------------------------------------
+// Note, the below queries were not shown in the recording.
+// They are here so you can experiment, see how charting works
+// as well as see joins applied at other levels.
+//-------------------------------------------------------------------------------------------------
+
+// Some storm event per state on chart
+let s2Level = 5;
+US_States
+  | project State = features.properties.NAME
+          , polygon = features.geometry
+  | extend covering = geo_polygon_to_s2cells(polygon, s2Level)
+  | mv-expand covering to typeof(string)
+  | join kind = inner hint.strategy = broadcast
+  (
+    StormEvents
+    | project BeginLon, BeginLat
+    | extend covering = geo_point_to_s2cell(BeginLon, BeginLat, s2Level)
+  ) on covering
+  | where geo_point_in_polygon(BeginLon, BeginLat, polygon)
+  | summarize any(BeginLon, BeginLat)
+            , NumberOfEvents = count() by tostring(State)
+  | render piechart with (kind=map)
+
+// Storm events per County
+let s2Level = 7;
+US_Counties
+  | project County = features.properties.NAME
+          , polygon = features.geometry
+  | extend covering = geo_polygon_to_s2cells(polygon, s2Level)
+  | mv-expand covering to typeof(string)
+  | join kind = inner hint.strategy = broadcast
+  (
+    StormEvents
+    | project BeginLon, BeginLat
+    | extend covering = geo_point_to_s2cell(BeginLon, BeginLat, s2Level)
+  ) on covering
+  | where geo_point_in_polygon(BeginLon, BeginLat, polygon)
+  | summarize NumberOfEvents = count() by tostring(County)
+  | order by County asc
+  

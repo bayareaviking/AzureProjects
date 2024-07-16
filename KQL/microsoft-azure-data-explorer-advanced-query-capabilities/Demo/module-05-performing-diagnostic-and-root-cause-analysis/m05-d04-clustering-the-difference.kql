@@ -1,0 +1,39 @@
+// Module 5 - Performing Diagnostic and Root Cause Analysis
+// Demo 4 - Using Diffpatterns
+
+// Connect to the sample database
+#connect cluster('help.kusto.windows.net').database('Samples')
+
+// diffpatterns() to find interesting clusters during the 2 minutes of the spike  
+// which are significantly different than clusters on the 8 minutes baseline before.
+
+// Note that we leave out a 2 minutes gap between the baseline and the spike 
+// to avoid the transition zone
+let anomaly_start  = datetime(2016-08-23 15:00);
+let anomaly_end    = datetime(2016-08-23 15:02);
+let baseline_start = datetime(2016-08-23 14:50);
+let baseline_end   = datetime(2016-08-23 14:58);
+let split_time=(baseline_end + anomaly_end) / 2.0;
+demo_clustering1
+  | where (PreciseTimeStamp between(baseline_start..baseline_end)) 
+       or (PreciseTimeStamp between(anomaly_start..anomaly_end))
+  | extend AB=iff(PreciseTimeStamp > split_time, 'Anomaly', 'Baseline')
+  | evaluate diffpatterns(AB, 'Anomaly', 'Baseline') 
+
+// Validating diff pattern segment: redraw timechart but splitting it to 
+// the problematic segment and all other
+let min_t = toscalar(demo_clustering1 | summarize min(PreciseTimeStamp));  
+let max_t = toscalar(demo_clustering1 | summarize max(PreciseTimeStamp));  
+demo_clustering1
+  | extend Pattern = iff( Region == "eau" 
+                             and ScaleUnit == "su7" 
+                             and DeploymentId == "b5d1d4df547d4a04ac15885617edba57"
+                             and ServiceHost == "e7f60c5d-4944-42b3-922a-92e98a8e7dec"
+                         , "Anomaly"
+                         , "Baseline"
+                         )
+  | make-series Occurrences=count() 
+            on PreciseTimeStamp 
+          from min_t to max_t step 10m 
+            by Pattern
+  | render timechart 

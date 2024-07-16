@@ -1,0 +1,8 @@
+Perf
+| count // Works exactly the same as any other instance of 'count', like in PowerShell or C#
+
+Perf
+| where TimeGenerated >= ago(1h)
+    and CounterName == "Bytes Received/sec"
+    and CounterValue > 0
+| count // Piped results to count, much like in PowerShell: $result.Count

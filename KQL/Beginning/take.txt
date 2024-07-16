@@ -1,0 +1,18 @@
+Perf
+| take 10 // takes ten RANDOM rows of the Perf table, 
+// has an alias of 'limit' for cross-language capability
+
+Perf
+| where TimeGenerated >= ago(1h)
+| take 5 // 'where' results can pipe to 'take'
+
+Perf 
+| where TimeGenerated >= ago(1h)
+    and CounterName == "Available MBytes"
+| take 15
+
+Perf 
+| where TimeGenerated >= ago(1h)
+    and CounterName == "Available MBytes"
+| where CounterValue > 0
+| take 33

@@ -1,0 +1,63 @@
+// Module 4 - Executing Geographic Analysis
+// Demo 1 - Nearby Events
+
+// Connect to the sample database
+#connect cluster('help.kusto.windows.net').database('Samples')
+
+//-------------------------------------------------------------------------------------------------
+// Get a list of places that are within a geograpihc circle
+//-------------------------------------------------------------------------------------------------
+let T = datatable(longitude:real, latitude:real, place:string)
+[
+    real(-122.317404), 47.609119, 'Seattle',                   // In circle 
+    real(-123.497688), 47.458098, 'Olympic National Forest',   // In exterior of circle  
+    real(-122.201741), 47.677084, 'Kirkland',                  // In circle
+    real(-122.443663), 47.247092, 'Tacoma',                    // In exterior of circle
+    real(-122.121975), 47.671345, 'Redmond',                   // In circle
+];
+// Radius for the circle in meters, 18000 meteres = 18km
+let radius = 18000; 
+// Long and Lat for the center of our circle
+let centerLong = -122.317404;
+let centerLat = 47.609119;
+// Generate a list of places inside the circle
+T | where geo_point_in_circle(longitude, latitude, centerLong, centerLat, radius)
+  | project place
+
+
+//-------------------------------------------------------------------------------------------------
+// Show nearby storm events on a map
+//-------------------------------------------------------------------------------------------------
+let radius = 10000;
+// Waterspout near Hiawatha Gardens
+let centerLong = -80.6048; 
+let centerLat = 28.0393;
+StormEvents
+  | where isnotempty( BeginLat ) and isnotempty( BeginLon )
+  | project BeginLon, BeginLat, EventType
+  | where geo_point_in_circle(BeginLon, BeginLat, centerLong, centerLat, radius)
+  | render scatterchart with (kind = map)
+
+
+
+//-------------------------------------------------------------------------------------------------
+// Show nearby storm events based on a geographic line
+//-------------------------------------------------------------------------------------------------
+let distanceFromLine = 500;  // 500 meters
+let geoLine = dynamic( { "type":"LineString"
+                       , "coordinates":[ [-81.76849365234375,24.56211235799689]
+                                       , [-81.507568359375,24.669482313373848]
+                                       , [-81.34002685546875,24.649513490158643]
+                                       , [-81.04339599609375,24.731864277701714]
+                                       , [-80.771484375,24.856534339310674]
+                                       , [-80.53253173828124,24.991036982463747]
+                                       , [-80.39794921875,25.147770882723563]
+                                       ]
+                       }
+                     );
+StormEvents
+  | where isnotempty( BeginLat ) and isnotempty( BeginLon )
+  | project BeginLon, BeginLat, EventType
+  | where geo_distance_point_to_line( BeginLon, BeginLat, geoLine ) < distanceFromLine 
+  | render scatterchart with (kind = map)
+

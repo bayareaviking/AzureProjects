@@ -1,0 +1,55 @@
+// Module 5 - Performing Diagnostic and Root Cause Analysis
+// Demo 1 - Introduction to Diagnostics
+
+// Connect to the sample database
+#connect cluster('help.kusto.windows.net').database('Samples')
+
+//-------------------------------------------------------------------------------------------------
+// A Quick Overview of Our Data
+//-------------------------------------------------------------------------------------------------
+
+// To give an idea of scale, lets count the number of rows
+demo_clustering1
+  | count 
+
+// Demo table contains 1 week of service exceptions
+// Show a sample
+demo_clustering1
+  | take 5
+
+//-------------------------------------------------------------------------------------------------
+// Charting Exceptions Over Time
+//-------------------------------------------------------------------------------------------------
+
+//  Build a time series of exception over the week in 10m bins
+let min_t = toscalar(demo_clustering1 | summarize min(PreciseTimeStamp));  
+let max_t = toscalar(demo_clustering1 | summarize max(PreciseTimeStamp));  
+demo_clustering1
+  | make-series NumberOfExceptions=count() 
+             on PreciseTimeStamp 
+           from min_t to max_t step 10m
+  | render timechart 
+      with ( title="Service exceptions over a week, 10 minutes resolution" ) 
+
+//-------------------------------------------------------------------------------------------------
+// Digging Deeper into Our Exceptions
+//-------------------------------------------------------------------------------------------------
+
+//  Focus on the 2nd spike, redraw 8 hours in 1m bins
+let min_t=datetime(2016-08-23 11:00);
+demo_clustering1
+  | make-series NumberOfExceptions=count() 
+             on PreciseTimeStamp 
+           from min_t to min_t+8h step 1m
+  | render timechart 
+      with ( title="Zoom on the 2nd spike, 1 minute resolution" )
+
+//-------------------------------------------------------------------------------------------------
+// Looking at the Detail Data
+//-------------------------------------------------------------------------------------------------
+
+//  Sample exceptions during the 2nd spike
+let min_peak_t=datetime(2016-08-23 15:00);
+let max_peak_t=datetime(2016-08-23 15:02);
+demo_clustering1
+  | where PreciseTimeStamp between(min_peak_t..max_peak_t)

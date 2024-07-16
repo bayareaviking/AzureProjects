@@ -1,0 +1,64 @@
+// Module 3 - Exploring User Analytics
+// Demo 3 - Activity Counts Metrics
+
+// Connect to the sample database
+#connect cluster('help.kusto.windows.net').database('Samples')
+
+// Example 1 - Basic Output
+let T = datatable(UserId:string, Timestamp:datetime)
+[
+  // June 1
+  'Bob',   datetime(2020-06-01),
+  'John',  datetime(2020-06-01),
+  // June 2
+  'Cindy', datetime(2020-06-02),
+  'John',  datetime(2020-06-02),
+  'Ted',   datetime(2020-06-02),
+  // June 3
+  'Bob',   datetime(2020-06-03),
+  'John',  datetime(2020-06-03),
+  'Todd',  datetime(2020-06-03),
+  'Todd',  datetime(2020-06-03),
+  'Sam',   datetime(2020-06-03),
+  // June 5
+  'Sam',   datetime(2020-06-05),
+];
+let start=datetime(2020-06-01);
+let end=datetime(2020-06-05);
+let window=1d;
+T | evaluate activity_counts_metrics(UserId, Timestamp, start, end, window)
+
+// Example 2 -  Adding Missing Days
+let T = datatable(UserId:string, Timestamp:datetime)
+[
+  // June 1
+  'Bob',   datetime(2020-06-01),
+  'John',  datetime(2020-06-01),
+  // June 2
+  'Cindy', datetime(2020-06-02),
+  'John',  datetime(2020-06-02),
+  'Ted',   datetime(2020-06-02),
+  // June 3
+  'Bob',   datetime(2020-06-03),
+  'John',  datetime(2020-06-03),
+  'Todd',  datetime(2020-06-03),
+  'Todd',  datetime(2020-06-03),
+  'Sam',   datetime(2020-06-03),
+  // June 5
+  'Sam',   datetime(2020-06-05),
+];
+let start=datetime(2020-06-01);
+let end=datetime(2020-06-05);
+let window=1d;
+T | evaluate activity_counts_metrics(UserId, Timestamp, start, end, window)
+T | evaluate activity_counts_metrics(UserId, Timestamp, start, end, window)
+    // Fill in the missing rows
+  | join kind=rightouter (print Timestamp = range (start, end, window) 
+  | mv-expand Timestamp to typeof(datetime)) on Timestamp
+    // Now only show non null data
+  | project Timestamp=coalesce(Timestamp, Timestamp1)
+          , count=coalesce(['count'], 0)
+          , dcount=coalesce(dcount, 0)
+          , new_dcount=coalesce(new_dcount, 0)
+          , aggregated_dcount=coalesce(aggregated_dcount, 0)
+

@@ -1,0 +1,25 @@
+// Module 8 - Extensibility Using Python / R
+// Demo 2 - Calling the Python Plugin
+
+//-------------------------------------------------------------------------------------------------
+// Simple Example
+//-------------------------------------------------------------------------------------------------
+
+// Inline Python Code
+range x from 1 to 10 step 1
+| evaluate python( typeof(*, x4:int)
+                 , 'exp = kargs["exp"]\n'
+                   'result = df\n'
+                   'result["x4"] = df["x"].pow(exp)\n'
+                 , pack('exp', 4)
+                 )
+
+// Python Code in a Variable
+let pyCode = 'exp = kargs["exp"]\n'
+             'result = df\n'
+             'result["x4"] = df["x"].pow(exp)\n';
+range x from 1 to 10 step 1
+| evaluate python( typeof(*, x4:int)
+                 , pyCode
+                 , pack('exp', 4)
+                 )

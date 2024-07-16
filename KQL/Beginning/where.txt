@@ -1,0 +1,23 @@
+Perf
+| where TimeGenerated >= ago(1h) // Where search looks for an exact match, where looks for a condition
+
+Perf
+| where TimeGenerated >= ago(1h)
+    and CounterName == "Bytes Received/sec" // using AND and OR statements, much like WQL in PowerShell
+
+Perf
+| where TimeGenerated >= ago(1h)
+    and (CounterName == "Bytes Received/sec"
+         or
+         CounterName == "% Processor Time") // Multiple AND or OR statements to expand or narrow your query
+
+Perf
+| where TimeGenerated >= ago(1h)
+| where (CounterName == "Bytes Received/sec"
+         or
+         CounterName == "% Processor Time")
+| where CounterValue > 0 // Stacking where statements to narror or expand query, piping results from and to each where statement, creating a new dataset each time
+// Try each approach to see which is faster
+
+Perf
+| where * has "Bytes" // Looking in all columns (*) that have (keyword "has") the phrase in quotes

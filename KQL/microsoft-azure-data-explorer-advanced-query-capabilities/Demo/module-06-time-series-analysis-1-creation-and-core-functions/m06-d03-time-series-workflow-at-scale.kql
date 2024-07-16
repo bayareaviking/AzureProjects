@@ -1,0 +1,53 @@
+// Module 6 - Time Series Analsys 1
+// Demo 3 - Workflow at Scale
+
+// Connect to the sample database
+#connect cluster('help.kusto.windows.net').database('Samples')
+
+// First, get a count of the number of rows in the dataset
+// Note if you are using the Kusto on click applicaiton , and
+// double click on the value in the output, it will display a
+// nicely formatted value in the bottom.
+demo_many_series1
+| count
+
+// Show a sample of our source data
+demo_many_series1
+  | take 4
+
+// Summarize the source data
+demo_many_series1
+  | summarize num=count()
+            , min_t=min(TIMESTAMP)
+            , max_t=max(TIMESTAMP)
+
+// Determine the fluxation pattern
+let min_t = toscalar(demo_many_series1 | summarize min(TIMESTAMP));  
+let max_t = toscalar(demo_many_series1 | summarize max(TIMESTAMP));  
+demo_many_series1
+  | make-series reads=avg(DataRead) 
+             on TIMESTAMP 
+           from min_t to max_t step 1h
+  | render timechart with (ymin=0) 
+
+// Only problem is the above dataset may hide abnormal fluxuations
+// due to the aggregations. So we need to revise our query
+
+// Get the top two time series with the most significance based
+// on linear regression
+let min_t = toscalar(demo_many_series1 | summarize min(TIMESTAMP));  
+let max_t = toscalar(demo_many_series1 | summarize max(TIMESTAMP));  
+demo_many_series1
+    // Create a new series from our data aggregated by the Loc, Op, and DB
+  | make-series reads=avg(DataRead) 
+             on TIMESTAMP 
+           from min_t to max_t step 1h
+             by Loc, Op, DB
+    // Now use linear regression to calculate the rsquare and slope 
+  | extend (rsquare, slope) = series_fit_line(reads)
+    // Reduce to just the top 2 based on slope
+  | top 2 by slope asc 
+    // Render out the results to a timechart
+  | render timechart 
+      with (title='Service Traffic Outage for 2 instances (out of 18339)')
+

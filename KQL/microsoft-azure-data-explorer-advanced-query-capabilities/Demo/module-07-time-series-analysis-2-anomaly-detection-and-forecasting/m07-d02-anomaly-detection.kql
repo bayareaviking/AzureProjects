@@ -1,0 +1,20 @@
+// Module 7 - Time Series Analysis 2
+// Demo 2 - Time Series Anomaly Detection
+
+// Connect to the sample database
+#connect cluster('help.kusto.windows.net').database('Samples')
+
+let min_t = datetime(2017-01-05);
+let max_t = datetime(2017-02-03 22:00);
+let dt = 2h;
+demo_make_series2
+  | make-series Traffic=avg(num)
+             on TimeStamp
+           from min_t to max_t step dt
+             by sid
+    // select a single time series for a cleaner visualization
+  | where sid == 'TS1'
+  | extend (anomalies, score, baseline) = series_decompose_anomalies(Traffic, 1.5, -1, 'linefit')
+  | render anomalychart
+      with (anomalycolumns=anomalies, title='Web app. traffic of a month, anomalies')
+

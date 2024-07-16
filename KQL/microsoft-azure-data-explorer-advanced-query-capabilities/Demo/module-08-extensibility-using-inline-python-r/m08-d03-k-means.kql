@@ -1,0 +1,48 @@
+// Module 8 - Extensibility Using Python / R
+// Demo 3 - K-Means
+
+//-------------------------------------------------------------------------------------------------
+//  Demo of K-Means (from Scikit-learn)
+//-------------------------------------------------------------------------------------------------
+
+StormEvents |  take 10
+
+// K-Means is a classic clustering algorithm, see 
+// https://en.wikipedia.org/wiki/K-means_clustering
+//
+// Here we look at the start and end locations of the reported events
+// and try to find distinct groups, each containing many events that
+// occured in approximately the same location. In DS terminology, each
+// group is called a cluster and is characterized by its size and
+// centroid (the average location of each coordinate). Our KQL query
+// will run K-Means and return the clusters' size and centroids
+//
+// scikit-learn (https://scikit-learn.org) is the main Machine Learning
+// open source package for Python
+// Here we use sklearn.cluster.KMeans 
+// (https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html)
+//
+let pyCode = 'from sklearn.cluster import KMeans\n'
+             'k = kargs["k"]\n'
+               //  instantiate the KMeans object for calculating 5 clusters
+             'km = KMeans(n_clusters=k)\n'
+               //  the actual clustering is done here
+             'km.fit(df)\n'
+               //  copy the centroids to the output dataframe
+             'result = pd.DataFrame(km.cluster_centers_, columns=df.columns)\n'
+               //  copy the cluster size
+             'result.insert(df.shape[1], "size", pd.DataFrame(km.labels_, columns=["n"]).groupby("n").size())\n'
+               //  set sequential numbers for cluster id
+             'result.insert(df.shape[1], "cluster_id", range(k))\n';
+StormEvents
+  | where isnotnull(BeginLat)
+    //  we clusterize on these 4 dimensions
+  | project BeginLat, BeginLon, EndLat, EndLon
+    //  the output schema contains the original 4 columns (for the centroids), cluster id and cluster size
+  | evaluate python( typeof(*, cluster_id:int, size:long)
+                   , pyCode
+                   , pack('k', 5)
+                   )
+    //  Order from biggest to smallest clusters
+  | order by size
+

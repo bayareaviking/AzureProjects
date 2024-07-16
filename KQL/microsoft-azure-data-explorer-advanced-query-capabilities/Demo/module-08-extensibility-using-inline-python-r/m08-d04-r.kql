@@ -1,0 +1,21 @@
+// Module 8 - Extensibility Using Python / R
+// Demo 4 - R Scripts
+
+//-------------------------------------------------------------------------------------------------
+// Calling R from KQL
+//-------------------------------------------------------------------------------------------------
+
+// The R decorated script
+let rCode = 'result <- df\n'
+            'n <- nrow(df)\n'
+            'g <- kargs$gain\n'
+            'f <- kargs$cycles\n'
+            'result$fx <- g * sin(df$x / n * 2 * pi * f)';
+range x from 1 to 360 step 1
+    // Output schema: append a new fx column to original table 
+  | evaluate r( typeof(*, fx:double)
+              , rCode
+                //  dictionary of parameters
+              , pack('gain', 100, 'cycles', 4)
+              )
+  | render linechart

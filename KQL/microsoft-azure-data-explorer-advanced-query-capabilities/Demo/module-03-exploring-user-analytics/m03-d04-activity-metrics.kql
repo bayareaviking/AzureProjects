@@ -1,0 +1,65 @@
+// Module 3 - Exploring User Analytics
+// Demo 4 - Activity Metrics
+
+// Connect to the sample database
+#connect cluster('help.kusto.windows.net').database('Samples')
+
+// Example 1 - Basic Query
+let T =  datatable(User:string, Timestamp:datetime)
+[   
+    // Bin 1: 6-01
+    "Bob",      datetime(2020-06-01),
+    "Jim",      datetime(2020-06-02),
+    "Jim",      datetime(2020-06-03),
+    // Bin 2: 6-08
+    "Bob",      datetime(2020-06-08),
+    "Jim",      datetime(2020-06-09),
+    "Sue",      datetime(2020-06-10),
+    // Bin 3: 6-15
+    "Bob",      datetime(2020-06-21),
+    "Jim",      datetime(2020-06-21),
+    // Bin 4: 6-22
+    "Ted",      datetime(2020-06-22),
+    "Sue",      datetime(2020-06-22),
+    "Hal",      datetime(2020-06-23),
+    "Bob",      datetime(2020-06-24),
+    // Bin 5: 6-29
+    "Bob",      datetime(2020-06-29)
+]; 
+let Start = datetime(2020-06-01);
+let End = datetime(2020-06-30);
+let bin = 7d;
+T | evaluate activity_metrics(User, Timestamp, Start, End, bin)
+
+
+// Example 2 - Formatted Output
+let T =  datatable(User:string, Timestamp:datetime)
+[   
+    // Bin 1: 6-01
+    "Bob",      datetime(2020-06-01),
+    "Jim",      datetime(2020-06-02),
+    "Jim",      datetime(2020-06-03),
+    // Bin 2: 6-08
+    "Bob",      datetime(2020-06-08),
+    "Jim",      datetime(2020-06-09),
+    "Sue",      datetime(2020-06-10),
+    // Bin 3: 6-15
+    "Bob",      datetime(2020-06-21),
+    "Jim",      datetime(2020-06-21),
+    // Bin 4: 6-22
+    "Ted",      datetime(2020-06-22),
+    "Sue",      datetime(2020-06-22),
+    "Hal",      datetime(2020-06-23),
+    "Bob",      datetime(2020-06-24),
+    // Bin 5: 6-29
+    "Bob",      datetime(2020-06-29)
+]; 
+let Start = datetime(2020-06-01);
+let End = datetime(2020-06-30);
+let bin = 7d;
+T | evaluate activity_metrics(User, Timestamp, Start, End, bin)
+  | project TimePeriod=format_datetime(Timestamp, 'MM/dd/yyyy')
+          , ActiveUsers = dcount_values
+          , NewUsers = dcount_newvalues
+          , RetentionPercent = round((retention_rate * 100), 2)
+          , ChurnPercent = round((churn_rate * 100), 2)

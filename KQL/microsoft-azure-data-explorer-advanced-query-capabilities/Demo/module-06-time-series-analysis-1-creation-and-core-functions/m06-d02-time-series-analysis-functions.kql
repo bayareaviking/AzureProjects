@@ -1,0 +1,74 @@
+// Module 6 - Time Series Analysis 1
+// Demo 2 - Time Series Analysis Core Funtions
+
+// Connect to the sample database
+#connect cluster('help.kusto.windows.net').database('Samples')
+
+//-------------------------------------------------------------------------------------------------
+// Filtering
+//-------------------------------------------------------------------------------------------------
+
+// series_fir (mention series_iir)
+let min_t = toscalar(demo_make_series1 | summarize min(TimeStamp));
+let max_t = toscalar(demo_make_series1 | summarize max(TimeStamp));
+demo_make_series1
+  | make-series NumberOfEvents=count() default=0 
+             on TimeStamp 
+           from min_t to max_t step 1h 
+             by OsVer
+  | extend ma_num=series_fir(NumberOfEvents, repeat(1, 5), true, true)
+  | render timechart
+
+//-------------------------------------------------------------------------------------------------
+// Regression Analysis
+//-------------------------------------------------------------------------------------------------
+// Generate a time series chart
+demo_series2
+  | extend series_fit_2lines(y), series_fit_line(y)
+  | render linechart with ( xcolumn=x )
+  
+// Calculate slopes and rsquare for model analysis  
+demo_series2
+  | extend series_fit_2lines(y), series_fit_line(y)
+  | project series_fit_line_y_slope
+          , series_fit_line_y_rsquare
+          , series_fit_2lines_y_left_slope
+          , series_fit_2lines_y_right_slope
+          , series_fit_2lines_y_rsquare
+
+
+//-------------------------------------------------------------------------------------------------
+// Seasonality detection
+//-------------------------------------------------------------------------------------------------
+
+// Show the sample data
+demo_series3
+  | render timechart 
+
+// Detect the periods
+demo_series3
+    //Use series_periods_detect to detect the periods in the time series
+    // Note, 8d/2h=96 bins (aka periods)
+  | project (periods, scores) = series_periods_detect(num, 0., 8d/2h, 2)  
+    // As the above comes out in a json style array convert to a normal data table
+  | mv-expand periods, scores
+    // Calculate the number of days per period
+  | extend days=2h*todouble(periods)/1d
+
+//-------------------------------------------------------------------------------------------------
+// Element-wise functions
+//-------------------------------------------------------------------------------------------------
+let min_t = toscalar(demo_make_series1 | summarize min(TimeStamp));
+let max_t = toscalar(demo_make_series1 | summarize max(TimeStamp));
+demo_make_series1
+  | make-series NumberOfEvents=count() default=0 
+             on TimeStamp 
+           from min_t to max_t step 1h 
+             by OsVer
+  | extend ma_num=series_fir(NumberOfEvents, repeat(1, 5), true, true)
+   //to calculate residual time series
+  | extend residual_num=series_subtract(NumberOfEvents, ma_num)
+    // filter on Win 10 to visualize a cleaner chart
+  | where OsVer == "Windows 10" 
+  | render timechart
+

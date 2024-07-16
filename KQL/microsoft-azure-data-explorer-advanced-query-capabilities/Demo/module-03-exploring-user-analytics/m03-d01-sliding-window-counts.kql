@@ -1,0 +1,34 @@
+// Module 3 - Exploring User Analytics
+// Demo 1 - Sliding Window Counts
+
+// Connect to the sample database
+#connect cluster('help.kusto.windows.net').database('Samples')
+
+let T = datatable(UserId:string, Timestamp:datetime)
+[
+  // Bin 1: 06-01
+  'Bob',      datetime(2020-06-01), 
+  'David',    datetime(2020-06-01), 
+  'David',    datetime(2020-06-01), 
+  'John',     datetime(2020-06-01), 
+  'Bob',      datetime(2020-06-01), 
+  // Bin 2: 06-02
+  'Ananda',   datetime(2020-06-02), 
+  'Atul',     datetime(2020-06-02), 
+  'John',     datetime(2020-06-02), 
+  // Bin 3: 06-03
+  'Ananda',   datetime(2020-06-03), 
+  'Atul',     datetime(2020-06-03), 
+  'Atul',     datetime(2020-06-03), 
+  'John',     datetime(2020-06-03), 
+  'Bob',      datetime(2020-06-03), 
+  // Bin 4: 06-04
+  'Betsy',    datetime(2020-06-04), 
+  // Bin 5: 06-05
+  'Bob',      datetime(2020-06-05), 
+];
+let start = datetime(2020-06-01);
+let end = datetime(2020-06-07); 
+let lookbackWindow = 3d;  
+let bin = 1d;
+T | evaluate sliding_window_counts(UserId, Timestamp, start, end, lookbackWindow, bin)

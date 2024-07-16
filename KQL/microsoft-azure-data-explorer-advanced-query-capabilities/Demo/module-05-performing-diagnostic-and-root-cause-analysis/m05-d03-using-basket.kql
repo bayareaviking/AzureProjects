@@ -1,0 +1,12 @@
+// Module 5 - Performing Diagnostic and Root Cause Analysis
+// Demo 2 - Using Basket
+
+// Connect to the sample database
+#connect cluster('help.kusto.windows.net').database('Samples')
+
+//  Using basket()
+let min_peak_t=datetime(2016-08-23 15:00);
+let max_peak_t=datetime(2016-08-23 15:02);
+demo_clustering1
+  | where PreciseTimeStamp between(min_peak_t..max_peak_t)
+  | evaluate basket()

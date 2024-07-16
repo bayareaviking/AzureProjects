@@ -1,0 +1,26 @@
+// Module 6 - Time Series Analysis 1
+// Demo 1 - Intro to Time Series
+
+// Connect to the sample database
+#connect cluster('help.kusto.windows.net').database('Samples')
+
+// Show a sample of the data we'll be using
+demo_make_series1 
+  | take 5
+
+// Now generate a time series we can analyze via a chart to look for
+// aggregated values in each of our "bins"
+// Our bins will be broke down by OS. For each OS, break down the 
+// number of incidents by date
+
+// Get the first (min) and last (maximum) dates for the data
+let min_t = toscalar(demo_make_series1 | summarize min(TimeStamp));
+let max_t = toscalar(demo_make_series1 | summarize max(TimeStamp));
+demo_make_series1
+    // Create a data series, for each OS Version sum the number of eents by date 
+  | make-series NumberOfEvents=count() default=0 
+             on TimeStamp 
+           from min_t to max_t step 1h 
+             by OsVer
+    // Rendering as a timechart can make it a bit easier to digest
+  | render timechart 

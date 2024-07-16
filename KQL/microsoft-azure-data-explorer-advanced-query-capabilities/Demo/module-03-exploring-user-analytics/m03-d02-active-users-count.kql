@@ -1,0 +1,128 @@
+// Module 3 - Exploring User Analytics
+// Demo 2 - Active Users Count
+
+// Connect to the sample database
+#connect cluster('help.kusto.windows.net').database('Samples')
+
+// Example 1 - The Basic Query
+// First lets run the query to find the number of active people
+let T =  datatable(User:string, Timestamp:datetime)
+[   
+    // Pre-start date
+    "Bob",      datetime(2020-05-29),
+    "Bob",      datetime(2020-05-30),
+    // Bin 1: 6-01
+    "Bob",      datetime(2020-06-01),
+    "Jim",      datetime(2020-06-02),
+    // Bin 2: 6-08
+    "Bob",      datetime(2020-06-08),
+    "Bob",      datetime(2020-06-09),
+    "Jim",      datetime(2020-06-10),
+    "Jim",      datetime(2020-06-10),
+    "Bob",      datetime(2020-06-11),
+    "Jim",      datetime(2020-06-14),
+    // Bin 3: 6-15
+    "Bob",      datetime(2020-06-21),
+    "Jim",      datetime(2020-06-21),
+    // Bin 4: 6-22
+    "Jim",      datetime(2020-06-22),
+    "Bob",      datetime(2020-06-22),
+    "Jim",      datetime(2020-06-23),
+    "Bob",      datetime(2020-06-24),
+    // Bin 5: 6-29
+    "Bob",      datetime(2020-06-29)
+]; 
+let Start = datetime(2020-06-01);
+let End = datetime(2020-06-30);
+let Period = 1d;
+let LookbackWindow = 5d;
+let ActivePeriods = 3;
+let Bin = 7d; 
+T | evaluate active_users_count(User, Timestamp, Start, End, LookbackWindow, Period, ActivePeriods, Bin)
+
+
+// Example 2 - Adding in Missing Bin Dates
+// In the above query, bins with 0 rows are not returned
+// We can fill in the gaps by creating a data set with just the bin
+// dates then joining it to the above results
+let T =  datatable(User:string, Timestamp:datetime)
+[
+    // Pre-start date
+    "Bob",      datetime(2020-05-29),
+    "Bob",      datetime(2020-05-30),
+    // Bin 1: 6-01
+    "Bob",      datetime(2020-06-01),
+    "Jim",      datetime(2020-06-02),
+    // Bin 2: 6-08
+    "Bob",      datetime(2020-06-08),
+    "Bob",      datetime(2020-06-09),
+    "Jim",      datetime(2020-06-10),
+    "Jim",      datetime(2020-06-10),
+    "Bob",      datetime(2020-06-11),
+    "Jim",      datetime(2020-06-14),
+    // Bin 3: 6-15
+    "Bob",      datetime(2020-06-21),
+    "Jim",      datetime(2020-06-21),
+    // Bin 4: 6-22
+    "Jim",      datetime(2020-06-22),
+    "Bob",      datetime(2020-06-22),
+    "Jim",      datetime(2020-06-23),
+    "Bob",      datetime(2020-06-24),
+    // Bin 5: 6-29
+    "Bob",      datetime(2020-06-29)
+]; 
+let Start = datetime(2020-06-01);
+let End = datetime(2020-06-30);
+let Period = 1d;
+let LookbackWindow = 5d;
+let ActivePeriods = 3;
+let Bin = 7d; 
+T | evaluate active_users_count(User, Timestamp, Start, End, LookbackWindow, Period, ActivePeriods, Bin)
+    // Union to the data of just bin dates
+  | join kind=rightouter (print Timestamp = range (Start, End, Bin) 
+  | mv-expand Timestamp to typeof(datetime)) on Timestamp
+
+
+// Example 3 - Cleaning up the Output
+// In the above query we filled in the dates, but now
+// we can clean up the output to something usable using
+// coalesce to display only non null values
+let T =  datatable(User:string, Timestamp:datetime)
+[
+    // Pre-start date
+    "Bob",      datetime(2020-05-29),
+    "Bob",      datetime(2020-05-30),
+    // Bin 1: 6-01
+    "Bob",      datetime(2020-06-01),
+    "Jim",      datetime(2020-06-02),
+    // Bin 2: 6-08
+    "Bob",      datetime(2020-06-08),
+    "Bob",      datetime(2020-06-09),
+    "Jim",      datetime(2020-06-10),
+    "Jim",      datetime(2020-06-10),
+    "Bob",      datetime(2020-06-11),
+    "Jim",      datetime(2020-06-14),
+    // Bin 3: 6-15
+    "Bob",      datetime(2020-06-21),
+    "Jim",      datetime(2020-06-21),
+    // Bin 4: 6-22
+    "Jim",      datetime(2020-06-22),
+    "Bob",      datetime(2020-06-22),
+    "Jim",      datetime(2020-06-23),
+    "Bob",      datetime(2020-06-24),
+    // Bin 5: 6-29
+    "Bob",      datetime(2020-06-29)
+]; 
+let Start = datetime(2020-06-01);
+let End = datetime(2020-06-30);
+let Period = 1d;
+let LookbackWindow = 5d;
+let ActivePeriods = 3;
+let Bin = 7d; 
+T | evaluate active_users_count(User, Timestamp, Start, End, LookbackWindow, Period, ActivePeriods, Bin)
+    // Fill in the missing rows
+  | join kind=rightouter (print Timestamp = range (Start, End, Bin) 
+  | mv-expand Timestamp to typeof(datetime)) on Timestamp
+    // Now only show non null data
+  | project Timestamp=coalesce(Timestamp, Timestamp1), dcount=coalesce(dcount, 0)
+ 

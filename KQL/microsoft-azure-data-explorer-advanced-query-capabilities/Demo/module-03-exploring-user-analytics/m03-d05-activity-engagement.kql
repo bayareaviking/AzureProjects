@@ -1,0 +1,68 @@
+// Module 3 - Exploring User Analytics
+// Demo 5 - Activity Engagement
+
+// Example 1 - Basic Query
+let T =  datatable(User:string, Timestamp:datetime)
+[   
+    "Bob",      datetime(2020-06-01),
+    "Jim",      datetime(2020-06-02),
+    "Jim",      datetime(2020-06-03),
+    "Ted",      datetime(2020-06-03),
+    "Sue",      datetime(2020-06-04),
+    "Bob",      datetime(2020-06-04),
+    "Jim",      datetime(2020-06-04),
+    "Ann",      datetime(2020-06-05),
+    "Mac",      datetime(2020-06-06),
+    "Lee",      datetime(2020-06-07),
+    "Bob",      datetime(2020-06-08),
+    "Sue",      datetime(2020-06-09),
+    "Jim",      datetime(2020-06-10),
+    "Bob",      datetime(2020-06-11),
+    "Jim",      datetime(2020-06-11),
+    "Ted",      datetime(2020-06-12),
+    "Sue",      datetime(2020-06-12),
+    "Bob",      datetime(2020-06-12),
+    "Hal",      datetime(2020-06-12),
+    "Bob",      datetime(2020-06-12)
+]; 
+let Start = datetime(2020-06-01);
+let End = datetime(2020-06-30);
+let InnerActivityWindow = 1d;
+let OuterActivityWindow = 7d;
+T | evaluate activity_engagement(User, Timestamp, Start, End, InnerActivityWindow, OuterActivityWindow)
+
+// Example 2 - Formatting the Output
+let T =  datatable(User:string, Timestamp:datetime)
+[   
+    "Bob",      datetime(2020-06-01),
+    "Jim",      datetime(2020-06-02),
+    "Jim",      datetime(2020-06-03),
+    "Ted",      datetime(2020-06-03),
+    "Sue",      datetime(2020-06-04),
+    "Bob",      datetime(2020-06-04),
+    "Jim",      datetime(2020-06-04),
+    "Ann",      datetime(2020-06-05),
+    "Mac",      datetime(2020-06-06),
+    "Lee",      datetime(2020-06-07),
+    "Bob",      datetime(2020-06-08),
+    "Sue",      datetime(2020-06-09),
+    "Jim",      datetime(2020-06-10),
+    "Bob",      datetime(2020-06-11),
+    "Jim",      datetime(2020-06-11),
+    "Ted",      datetime(2020-06-12),
+    "Sue",      datetime(2020-06-12),
+    "Bob",      datetime(2020-06-12),
+    "Hal",      datetime(2020-06-12),
+    "Bob",      datetime(2020-06-12)
+]; 
+let Start = datetime(2020-06-01);
+let End = datetime(2020-06-30);
+let InnerActivityWindow = 1d;
+let OuterActivityWindow = 7d;
+T | evaluate activity_engagement(User, Timestamp, Start, End, InnerActivityWindow, OuterActivityWindow)
+  | project TimePeriod=format_datetime(Timestamp, 'yyyy-MM-dd')
+          , ActiveUsersToday = dcount_activities_inner
+          , ActiveUsersInTimePeriod = dcount_activities_outer
+          , ActivityPercent = round((activity_ratio * 100), 2)
+  | order by TimePeriod asc
+

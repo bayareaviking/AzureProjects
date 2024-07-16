@@ -1,0 +1,62 @@
+Perf
+| take 100
+| project ObjectName
+        , CounterName
+        , InstanceName
+        , CounterValue
+        , TimeGenerated
+
+Perf
+| where CounterName == "Free Megabytes"
+| take 100
+| project ObjectName // Determines which columns to show (project) in the results
+        , CounterName
+        , InstanceName
+        , CounterValue
+        , TimeGenerated
+| extend FreeGB = CounterValue / 1000 // Creates new columns based on expressions
+       , FreeMB = CounterValue
+       , FreeKB = CounterValue * 1000
+
+Perf
+| where CounterName == "Free Megabytes"
+| take 100
+| extend FreeGB = CounterValue / 1000
+       , FreeMB = CounterValue
+       , FreeKB = CounterValue * 1000
+| project ObjectName // 'project' determines the order of the columns
+        , CounterName
+        , InstanceName
+        , CounterValue
+        , TimeGenerated
+        , FreeKB // 'project' can also be used to order the columns created by 'extend'
+        , FreeMB
+        , FreeGB
+
+Perf
+| where CounterName == "Free Megabytes"
+| take 100
+| project ObjectName
+        , CounterName
+        , InstanceName
+        , TimeGenerated
+        , FreeKB = CounterValue * 1000 // 'project' can also display custom columns based on expressions (just like 'extend')
+        , FreeMB = CounterValue
+        , FreeGB = CounterValue / 1000
+
+Perf
+| where CounterName == "Free Megabytes"
+| take 100
+| project ObjectName
+        , CounterName
+        , InstanceName
+        , CounterValue
+        , TimeGenerated
+| project ObjectName // Piping to 'project' a second time to add calculated values sometimes runs faster
+        , CounterName
+        , InstanceName
+        , CounterValue
+        , TimeGenerated
+        , FreeKB = CounterValue * 1000
+        , FreeMB = CounterValue 
+        , FreeGB = CounterValue / 1000

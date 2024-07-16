@@ -1,0 +1,36 @@
+Perf
+| summarize count() by CounterName // Summarizes the count() function of each CounterName using the 'by' keyword 
+
+Perf
+| summarize count() by ObjectName, CounterName // Displaying the results of count() along with the CounterName and where the column exists (ObjectName)
+
+Perf
+| summarize PerfCount = count() // Renaming the results to something less ugly, like "PerfCount"
+        by ObjectName, CounterName
+
+Perf 
+| where CounterName == "% Free Space"
+| summarize NumberOfEntries  = count() // Showcasing how you can format and get avg, sum, min, and max as the results
+          , AverageFreeSpace = avg(CounterValue)
+          , MinFreeSpace     = min(CounterValue)
+          , MaxFreeSpace     = max(CounterValue)
+          , SumFreeSpace     = sum(CounterValue)
+        by CounterName, ObjectName
+// The above is an example of formatting output for reporting purposes, not just showing the raw data results from a query
+
+Perf
+| where TimeGenerated >= ago(7d)
+| summarize NumberOfEntries = count()
+         by bin(TimeGenerated, 1d) // the 'bin' keyword breaks up the data into blocks, like intervals of time
+
+Perf
+| where TimeGenerated >= ago(7d)
+| summarize NumberOfEntries = count() 
+        by bin(TimeGenerated, 1d) // Do NOT put a pipe before an 'and', 'or', or 'by' keyword after a 'where' statement
+| sort by TimeGenerated // The 'sort' keyword works exactly like Sort-Object in PowerShell
+
+Perf
+| where CounterName == "% Free Space"
+| summarize Number_of_Rows_at_This_Percent_Level = count()
+        by bin(CounterValue, 10)
+| sort by CounterValue

@@ -1,0 +1,21 @@
+// Module 7 - Time Series Analysis 2
+// Demo 4 - Scalability
+
+// Connect to the sample database
+#connect cluster('help.kusto.windows.net').database('Samples')
+
+let min_t = datetime(2017-01-05);
+let max_t = datetime(2017-02-03 22:00);
+let dt = 2h;
+let horizon=7d;
+demo_make_series2
+  | make-series Traffic=avg(num) 
+             on TimeStamp 
+           from min_t to max_t+horizon step dt 
+           by sid
+    // add artificial offset for easy visualization of multiple time series
+  | extend offset=case(sid=='TS3', 4000000, sid=='TS2', 2000000, 0)   
+  | extend Traffic=series_add(Traffic, offset)
+  | extend forecast = series_decompose_forecast(Traffic, toint(horizon/dt))
+  | render timechart 
+      with (title='Web app. traffic of a month, forecasting the next week for 3 time series')  

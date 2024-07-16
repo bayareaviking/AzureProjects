@@ -1,0 +1,30 @@
+Perf
+| search "Memory" // Looks for a match to "Memory" across all columns and fields
+
+Perf
+| search "memory" // Kusto is case-insensitive
+
+Perf
+| search kind=case_sensitive "memory" // specifying case-sensitivy
+
+// search can look for everything in your database, do NOT do something like 'search "Memory"', always specify your table
+
+search in (Perf, Event, Alert) "Memory" // use search across multiple data sources/tables
+
+Perf
+| search CounterName == "Available MBytes" // Searches a whole column
+
+Perf
+| search CounterName:"MBytes" // searches for text anywhere in the column
+
+Perf
+| search "*Bytes*"
+
+Perf
+| search * startswith "Bytes"
+
+Perf
+| search * endswith "sec"
+
+Perf
+| search "Free*bytes" and ("C:" or "D:")

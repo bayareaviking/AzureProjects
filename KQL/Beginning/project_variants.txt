@@ -1,0 +1,36 @@
+Perf
+| where TimeGenerated  > ago(1h)
+| take 100
+| project-away SourceSystem
+             , CounterPath
+             , Max
+             , Min
+             , StandardDeviation
+             , Type
+             , _ResourceId
+             , _SubscriptionId
+             , TenantId
+             , MG
+
+Perf
+| where CounterName == "Free Megabytes"
+| take 100
+| project-rename FreeMB = CounterValue // Renames the resulting column first, which can then be used to make calculations
+| project ObjectName
+        , CounterName
+        , InstanceName
+        , TimeGenerated
+        , FreeKB = FreeMB * 1000
+        , FreeMB
+        , FreeGB = FreeMB / 1000
+
+Perf
+| where CounterName == "Free Megabytes"
+| take 50
+| project-keep ObjectName // 'project-keep' maintains original order of columns from source table
+             , CounterName
+             , InstanceName
+             , CounterValue
+             , TimeGenerated
+// 'project-reorder' does the same thing 'project' does, reordering and listing selected columns, but then displays the rest of the original columns as well
+// 'project-reorder * asc' will select all columns and order them alphabetically (since 'project-reorder' supports wildcards)
