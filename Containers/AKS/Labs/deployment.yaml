@@ -26,4 +26,4 @@ spec:
               memory: 256Mi
           ports:
             - containerPort: 80
-              name: httpe the name of the deployment
+              name: http
